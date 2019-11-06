@@ -43,7 +43,7 @@ def calc_Ds(n_, i_):
 
 
 def calc_p_q(p_, q_, n_, i_):
-    '''计算等两变化年金现值'''
+    '''计算等量变化年金现值'''
     return (p_ - q_) * calc_a(n_, i_) + q_ * calc_Ia(n_, i_)
 
 
