@@ -42,3 +42,11 @@ class rand_calc:
         计算随机利率期初年金现值
         '''
         pass
+
+
+class BS:
+    def __init__(self):
+        pass
+
+    def calc_price(self, S, E, T):
+        pass
