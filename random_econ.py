@@ -1,11 +1,22 @@
 from math import *
-from my_functions import *
+import my_functions
+import scipy.stats
+
+
+def get_prob(x):
+    return scipy.stats.norm(0, 1).cdf(x)
 
 
 class rand_calc:
     def __init__(self, mu, var):
         self.mu = mu
         self.sigma = sqrt(var)
+
+    def calc_ij(self):
+        self.i = self.calc_a(1)[0] - 1
+        self.j = 2 * self.i + self.i ** 2 + self.calc_a(1)[1] ** 2
+        self.i_iver = 1 / self.calc_a_iver(1)[0] - 1
+        self.k_iver = 1 / exp(-2 * self.mu + 4 * self.sigma ** 2 / 2) - 1
 
     def calc_a(self, n):
         '''
@@ -27,12 +38,8 @@ class rand_calc:
         '''
         计算随机利率期末年金终值
         '''
-        mean_n = 0
-        var_n = 0
-        for i in range(n):
-            mean_n += self.calc_a(i)[0]
-            var_n += self.calc_a(i)[1]
-        return mean_n, sqrt(var_n)
+        tmp = self.calc_dot_s(n - 1)
+        return tmp[0] + 1, tmp[1]
 
     def calc_dot_s(self, n):
         '''
@@ -42,15 +49,11 @@ class rand_calc:
         var_n = 0
         for i in range(n):
             mean_n += self.calc_a(i + 1)[0]
-            var_n += self.calc_a(i + 1)[1] ** 2
-        # print(var_n)
-        # for i in range(n):
-        #     j = i + 1
-        #     while j < n:
-        #         var_n += (self.calc_a(2)[0] ** (i + 1)) * (self.calc_a(1)[0] ** (j - i)) \
-        #             - self.calc_a(i + 1)[0] * self.calc_a(j + 1)[0]
-        #         j += 1
-        # print(var_n)
+        m1 = 1 + self.i
+        m2 = 1 + self.j
+        sj = my_functions.calc_dot_s(n, self.j)
+        si = my_functions.calc_dot_s(n, self.i)
+        var_n = (m2 + m1) / (m2 - m1) * sj - 2 * m2 / (m2 - m1) * si - si ** 2
         return mean_n, sqrt(var_n)
 
     def calc_a_n(self, n):
@@ -61,24 +64,28 @@ class rand_calc:
         var_n = 0
         for i in range(n):
             mean_n += self.calc_a_iver(i + 1)[0]
-            var_n += self.calc_a_iver(i + 1)[1] ** 2
+        ai = my_functions.calc_a(n, self.i_iver)
+        ak = my_functions.calc_a(n, self.k_iver)
+        m1 = 1 / (1 + self.i_iver)
+        m2 = 1 / (1 + self.k_iver)
+        var_n = (m2 + m1) / (m2 - m1) * ak - 2 * m2 / (m2 - m1) * ai - ai ** 2
         return mean_n, sqrt(var_n)
 
     def calc_dot_a_n(self, n):
         '''
         计算随机利率期初年金现值
         '''
-        mean_n = 0
-        var_n = 0
-        for i in range(n):
-            mean_n += self.calc_a_iver(i)[0]
-            var_n += self.calc_a_iver(i)[1] ** 2
-        return mean_n, sqrt(var_n)
+        tmp = self.calc_a_n(n - 1)
+        return tmp[0] + 1, tmp[1]
 
 
-def calc_price(S, E, T):
-    pass
+def calc_price(S, E, T, delta, std):
+    d1 = (log(S / E) + (delta + 1 / 2 * std ** 2) * T) / (std * sqrt(T))
+    d2 = (log(S / E) + (delta - 1 / 2 * std ** 2) * T) / (std * sqrt(T))
+    C = S * get_prob(d1) - exp(-delta * T) * E * get_prob(d2)
+    P = exp(-delta * T) * E * get_prob(-d2) - S * get_prob(-d1)
+    return C, P
 
 
 if __name__ == "__main__":
-    calculater = rand_calc(0.06, 0.01)
+    print(calc_price(0.00001, 1, 1, 0.1, 0.3))
